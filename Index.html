@@ -5,79 +5,72 @@
   <title>Moving Bike Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: sans-serif;
       background: #111;
       color: #fff;
+      font-family: sans-serif;
     }
     #topbar {
       padding: 10px;
-      text-align: center;
       background: #000;
-      position: relative;
+      text-align: center;
       z-index: 1000;
+      position: relative;
     }
     #map {
       width: 100%;
       height: calc(100vh - 50px);
     }
     button {
-      padding: 8px 16px;
-      font-size: 16px;
-      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 18px;
       border: none;
+      border-radius: 6px;
       background: #0a84ff;
-      color: #fff;
+      color: white;
     }
     #status {
       margin-top: 6px;
-      font-size: 13px;
+      font-size: 14px;
       opacity: 0.9;
     }
   </style>
 </head>
 <body>
+
   <div id="topbar">
     <button id="startBtn">Start Bike 🚲</button>
-    <div id="status">Tap "Start Bike" to begin.</div>
+    <div id="status">Tap Start to begin.</div>
   </div>
+
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
 
-    // Initial center (fallback: somewhere visible)
-    const fallbackCenter = [37.7749, -122.4194]; // SF
+    const fallbackCenter = [37.7749, -122.4194];
 
-    // Create map
-    const map = L.map('map').setView(fallbackCenter, 18); // zoomed in
+    const map = L.map("map").setView(fallbackCenter, 18);
 
-    // Tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19
     }).addTo(map);
 
-    // Bike icon using emoji
+    // BIGGER BIKE ICON (64x64)
     const bikeIcon = L.divIcon({
-      html: '🚲',
-      className: '',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      html: '<div style="font-size:64px;">🚲</div>',
+      className: "",
+      iconSize: [64, 64],
+      iconAnchor: [32, 32]
     });
 
     let bikeMarker = L.marker(fallbackCenter, { icon: bikeIcon }).addTo(map);
@@ -92,16 +85,19 @@
 
     function startFakeMovement(center) {
       if (fakeInterval) return;
-      setStatus('GPS not available. Simulating bike movement.');
-      const radius = 0.0005; // ~50m
+      setStatus("GPS blocked. Simulating bike movement…");
+
+      const radius = 0.0005;
+
       fakeInterval = setInterval(() => {
         fakeAngle += 0.05;
         const lat = center[0] + radius * Math.sin(fakeAngle);
         const lng = center[1] + radius * Math.cos(fakeAngle);
-        const latlng = [lat, lng];
-        bikeMarker.setLatLng(latlng);
-        map.setView(latlng, 18);
-      }, 300);
+        const pos = [lat, lng];
+
+        bikeMarker.setLatLng(pos);
+        map.setView(pos, 18);
+      }, 250);
     }
 
     function stopFakeMovement() {
@@ -113,39 +109,40 @@
 
     function onGeoSuccess(pos) {
       stopFakeMovement();
+
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       const acc = pos.coords.accuracy;
-      const latlng = [lat, lng];
+
+      const loc = [lat, lng];
 
       setStatus(`GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(acc)}m)`);
 
-      bikeMarker.setLatLng(latlng);
-      map.setView(latlng, 18);
+      bikeMarker.setLatLng(loc);
+      map.setView(loc, 18);
     }
 
     function onGeoError(err) {
-      setStatus('GPS error: ' + err.message + ' — using simulated bike path.');
+      setStatus("GPS error: " + err.message);
       startFakeMovement(fallbackCenter);
     }
 
     function startBike() {
-      setStatus('Starting…');
+      setStatus("Starting…");
 
-      // Clear previous
       if (geoWatchId !== null) {
         navigator.geolocation.clearWatch(geoWatchId);
         geoWatchId = null;
       }
+
       stopFakeMovement();
 
-      if (!('geolocation' in navigator)) {
-        setStatus('Geolocation not supported. Simulating bike movement.');
+      if (!("geolocation" in navigator)) {
+        setStatus("No GPS. Simulating movement.");
         startFakeMovement(fallbackCenter);
         return;
       }
 
-      // Need user gesture (button click) before this in WKWebView/Koder
       geoWatchId = navigator.geolocation.watchPosition(onGeoSuccess, onGeoError, {
         enableHighAccuracy: true,
         maximumAge: 0,
@@ -153,7 +150,8 @@
       });
     }
 
-    startBtn.addEventListener('click', startBike);
+    startBtn.addEventListener("click", startBike);
   </script>
+
 </body>
 </html>
